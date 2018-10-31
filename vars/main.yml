@@ -1,0 +1,8 @@
+redis_exporter_version: v0.11.3
+redis_exporter_url: "https://github.com/oliver006/redis_exporter/releases/download/{{ redis_exporter_version }}/redis_exporter-{{ redis_exporter_version }}.linux-amd64.tar.gz"
+
+redis_exporter_log_path: "/var/log/redis-exporter.log"
+
+redis_exporter_addrs: "{% for i in redis_instances %}${HOSTNAME}:{{ i.port }}{% if not loop.last %},{% endif %}{% endfor %}"
+redis_exporter_aliases: "{% for i in redis_instances %}{{ i.port }}{% if not loop.last %},{% endif %}{% endfor %}"
+redis_exporter_args: "-redis.addr {{ redis_exporter_addrs }} -redis.alias {{ redis_exporter_aliases }}"

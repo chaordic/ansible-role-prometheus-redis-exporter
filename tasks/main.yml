@@ -1,0 +1,93 @@
+- name : redis_exporter | check
+  stat:
+    path: /usr/local/bin/redis_exporter
+  register: redis_exporter_binary
+
+- name: redis_exporter | download
+  get_url:
+    url: "{{ redis_exporter_url }}"
+    dest: /tmp
+  when: not redis_exporter_binary.stat.exists
+
+- name: redis_exporter | extract
+  unarchive:
+    src: "/tmp/redis_exporter-{{ redis_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+  when: not redis_exporter_binary.stat.exists
+
+- name: redis_exporter | copy binary
+  copy:
+    src: "/tmp/redis_exporter"
+    dest: "/usr/local/bin/redis_exporter"
+    owner: "root"
+    group: "root"
+    remote_src: yes
+    mode: 0755
+  when: not redis_exporter_binary.stat.exists
+
+- name: redis_exporter | cleanup
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "/tmp/redis_exporter"
+    - "/tmp/redis_exporter-{{ redis_exporter_version }}.linux-amd64.tar.gz"
+
+- name: redis_exporter | init-script
+  template:
+    src: init-script.j2
+    dest: /etc/init.d/redis-exporter
+    owner: root
+    group: root
+    mode: '0755'
+  notify:
+    - restart redis-exporter
+  when: ansible_distribution_major_version == "14"
+
+# TODO: use service args from a file
+#- name: redis_exporter | systemd args file
+#  template:
+#    src: systemd-args.j2
+#    dest: /etc/default/redis-exporter
+#    owner: root
+#    group: root
+#  notify:
+#    - restart redis-exporter
+#  when: ansible_distribution_major_version > "14"
+
+- name: redis_exporter | systemd script
+  template:
+    src: systemd-script.j2
+    dest: /lib/systemd/system/redis-exporter.service
+    owner: root
+    group: root
+    mode: '0755'
+  notify:
+    - restart redis-exporter
+  when: ansible_distribution_major_version > "14"
+
+- name: Link systemd unit service to the /etc dirs
+  file:
+    src: "/lib/systemd/system/redis-exporter.service"
+    dest: "/etc/systemd/system/redis-exporter.service"
+    state: link
+  when:
+    - (not ansible_check_mode) and ansible_distribution_major_version > "14"
+  tags:
+    - redis
+
+- name: redis_exporter | enable service
+  service:
+    name: redis-exporter
+    enabled: yes
+    state: restarted
+  when: ansible_distribution_major_version == "14"
+
+- name: redis_exporter | logrotation
+  template:
+    src: logrotate.j2
+    dest: /etc/logrotate.d/redis-exporter
+    owner: root
+    group: root
+    mode: '0644'

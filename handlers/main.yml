@@ -1,0 +1,4 @@
+- name: restart redis-exporter
+  service:
+    name: redis-exporter
+    state: restarted
