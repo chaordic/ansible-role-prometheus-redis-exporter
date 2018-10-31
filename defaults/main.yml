@@ -3,6 +3,6 @@ redis_exporter_url: "https://github.com/oliver006/redis_exporter/releases/downlo
 
 redis_exporter_log_path: "/var/log/redis-exporter.log"
 
-redis_exporter_addrs: "localhost:6379"
-redis_exporter_aliases: "6379"
+redis_exporter_addrs: localhost:6379
+redis_exporter_aliases: 6379
 redis_exporter_args: "-redis.addr {{ redis_exporter_addrs }} -redis.alias {{ redis_exporter_aliases }}"
